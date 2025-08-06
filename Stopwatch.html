@@ -1,0 +1,346 @@
+`stopwatch-clock.html`
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stopwatch & Clock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .glass-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .digit {
+            font-size: 5rem;
+            background: linear-gradient(to right, #00bfff, #0080ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 10px rgba(0, 128, 255, 0.3);
+        }
+        
+        .colon {
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.5);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(2px);
+        }
+        
+        .btn-start {
+            background: linear-gradient(135deg, #00e676, #00c853);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #ff5252, #d32f2f);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(135deg, #ffab40, #ff9100);
+        }
+        
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .mode-btn.active {
+            background: rgba(0, 191, 255, 0.2);
+            border-bottom: 2px solid #00bfff;
+        }
+        
+        .lap-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #00bfff;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .digit {
+                font-size: 3rem;
+            }
+            .colon {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4">
+    <div class="glass-container w-full max-w-2xl p-6 md:p-8">
+        <h1 class="text-2xl font-bold text-center mb-6 text-white">Stopwatch & Clock</h1>
+        
+        <!-- Mode Toggle -->
+        <div class="flex justify-center mb-6">
+            <button id="modeToggle" class="mode-btn rounded-lg px-4 py-2 font-medium text-white mr-2 active" data-mode="stopwatch">
+                Stopwatch
+            </button>
+            <button id="clockToggle" class="mode-btn rounded-lg px-4 py-2 font-medium text-white" data-mode="clock">
+                Clock
+            </button>
+        </div>
+        
+        <!-- Stopwatch Display -->
+        <div id="stopwatchDisplay" class="text-center mb-8">
+            <div class="flex justify-center items-baseline">
+                <span class="digit" id="stopwatchHrs">00</span>
+                <span class="colon">:</span>
+                <span class="digit" id="stopwatchMins">00</span>
+                <span class="colon">:</span>
+                <span class="digit" id="stopwatchSecs">00</span>
+                <span class="colon">.</span>
+                <span class="digit text-4xl" id="stopwatchMs">00</span>
+            </div>
+            
+            <div class="flex justify-center space-x-4 mt-6">
+                <button id="startBtn" class="btn btn-start rounded-full px-6 py-3 text-white font-bold">
+                    Start
+                </button>
+                <button id="stopBtn" class="btn btn-stop rounded-full px-6 py-3 text-white font-bold hidden">
+                    Stop
+                </button>
+                <button id="resetBtn" class="btn btn-reset rounded-full px-6 py-3 text-white font-bold">
+                    Reset
+                </button>
+                <button id="lapBtn" class="btn rounded-full px-6 py-3 text-white font-bold bg-purple-500 hidden">
+                    Lap
+                </button>
+            </div>
+            
+            <div id="lapTimes" class="mt-6 max-h-48 overflow-y-auto hidden">
+                <div class="text-left">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-300">Lap Times</h3>
+                    <div id="lapList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Clock Display -->
+        <div id="clockDisplay" class="text-center mb-8 hidden">
+            <div class="flex justify-center items-baseline">
+                <span class="digit" id="clockHrs">00</span>
+                <span class="colon">:</span>
+                <span class="digit" id="clockMins">00</span>
+                <span class="colon">:</span>
+                <span class="digit" id="clockSecs">00</span>
+            </div>
+            <div class="mt-4 text-xl">
+                <span id="clockDate" class="text-gray-300"></span>
+                <span id="clockAmPm" class="text-gray-300 ml-2"></span>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-400 text-sm">
+            <p>Click "Start" to begin timing, "Stop" to pause, and "Reset" to clear</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const modeToggle = document.getElementById('modeToggle');
+        const clockToggle = document.getElementById('clockToggle');
+        const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+        const clockDisplay = document.getElementById('clockDisplay');
+        
+        // Stopwatch Elements
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lapBtn = document.getElementById('lapBtn');
+        const stopwatchHrs = document.getElementById('stopwatchHrs');
+        const stopwatchMins = document.getElementById('stopwatchMins');
+        const stopwatchSecs = document.getElementById('stopwatchSecs');
+        const stopwatchMs = document.getElementById('stopwatchMs');
+        const lapTimes = document.getElementById('lapTimes');
+        const lapList = document.getElementById('lapList');
+        
+        // Clock Elements
+        const clockHrs = document.getElementById('clockHrs');
+        const clockMins = document.getElementById('clockMins');
+        const clockSecs = document.getElementById('clockSecs');
+        const clockDate = document.getElementById('clockDate');
+        const clockAmPm = document.getElementById('clockAmPm');
+        
+        // Variables
+        let stopwatchInterval;
+        let startTime;
+        let elapsedTime = 0;
+        let laps = [];
+        let isRunning = false;
+        
+        // Initialize
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        // Event Listeners
+        modeToggle.addEventListener('click', () => switchMode('stopwatch'));
+        clockToggle.addEventListener('click', () => switchMode('clock'));
+        startBtn.addEventListener('click', startStopwatch);
+        stopBtn.addEventListener('click', stopStopwatch);
+        resetBtn.addEventListener('click', resetStopwatch);
+        lapBtn.addEventListener('click', recordLap);
+        
+        // Functions
+        function switchMode(mode) {
+            if (mode === 'stopwatch') {
+                stopwatchDisplay.classList.remove('hidden');
+                clockDisplay.classList.add('hidden');
+                modeToggle.classList.add('active');
+                clockToggle.classList.remove('active');
+                
+                // If stopwatch was running when switched to clock, show the lap button
+                if (isRunning) {
+                    lapBtn.classList.remove('hidden');
+                }
+            } else {
+                stopwatchDisplay.classList.add('hidden');
+                clockDisplay.classList.remove('hidden');
+                modeToggle.classList.remove('active');
+                clockToggle.classList.add('active');
+                lapBtn.classList.add('hidden');
+            }
+        }
+        
+        function startStopwatch() {
+            if (!isRunning) {
+                startTime = Date.now() - elapsedTime;
+                stopwatchInterval = setInterval(updateStopwatch, 10);
+                isRunning = true;
+                startBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+                resetBtn.classList.remove('hidden');
+                lapBtn.classList.remove('hidden');
+            }
+        }
+        
+        function stopStopwatch() {
+            if (isRunning) {
+                clearInterval(stopwatchInterval);
+                elapsedTime = Date.now() - startTime;
+                isRunning = false;
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                lapBtn.classList.add('hidden');
+            }
+        }
+        
+        function resetStopwatch() {
+            clearInterval(stopwatchInterval);
+            stopwatchHrs.textContent = '00';
+            stopwatchMins.textContent = '00';
+            stopwatchSecs.textContent = '00';
+            stopwatchMs.textContent = '00';
+            elapsedTime = 0;
+            laps = [];
+            lapList.innerHTML = '';
+            lapTimes.classList.add('hidden');
+            isRunning = false;
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            lapBtn.classList.add('hidden');
+        }
+        
+        function recordLap() {
+            if (isRunning) {
+                const currentTime = Date.now() - startTime;
+                const formattedTime = formatTime(currentTime);
+                laps.push(formattedTime);
+                
+                const lapItem = document.createElement('div');
+                lapItem.className = 'lap-item p-2 rounded';
+                lapItem.innerHTML = `
+                    <span class="text-gray-300">Lap ${laps.length}:</span>
+                    <span class="font-mono ml-2">${formattedTime}</span>
+                `;
+                
+                lapList.prepend(lapItem);
+                lapTimes.classList.remove('hidden');
+            }
+        }
+        
+        function updateStopwatch() {
+            const currentTime = Date.now();
+            elapsedTime = currentTime - startTime;
+            
+            const time = formatTime(elapsedTime);
+            stopwatchHrs.textContent = time.hours;
+            stopwatchMins.textContent = time.minutes;
+            stopwatchSecs.textContent = time.seconds;
+            stopwatchMs.textContent = time.milliseconds;
+        }
+        
+        function formatTime(time) {
+            // Calculate hours, minutes, seconds, milliseconds
+            const date = new Date(time);
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+            const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+            const milliseconds = Math.floor(date.getUTCMilliseconds() / 10).toString().padStart(2, '0');
+            
+            return {
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                fullTime: `${hours}:${minutes}:${seconds}.${milliseconds}`
+            };
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            
+            // 12-hour format
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            
+            clockHrs.textContent = displayHours.toString().padStart(2, '0');
+            clockMins.textContent = minutes;
+            clockSecs.textContent = seconds;
+            clockAmPm.textContent = ampm;
+            
+            // Date display
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            clockDate.textContent = now.toLocaleDateString(undefined, options);
+        }
+    </script>
+</body>
+</html>
+
+```
+
